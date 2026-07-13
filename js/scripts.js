@@ -1,0 +1,3 @@
+document.addEventListener('DOMContentLoaded', () => {
+    // ... todo tu código de lógica, Canvas y renderizado ...
+});

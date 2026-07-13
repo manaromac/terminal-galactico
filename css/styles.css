@@ -1,0 +1,13 @@
+/* ... pega aquí todo tu CSS original ... */
+
+/* Añade esta nueva clase al final del archivo */
+.vista-3d-ampliada { 
+    position: relative; 
+    height: 250px; 
+    background: #010a15; 
+    display: flex; 
+    justify-content: center; 
+    align-items: center; 
+    overflow: hidden; 
+    border: 1px solid rgba(0, 210, 255, 0.2); 
+}

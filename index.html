@@ -1,0 +1,1234 @@
+<!DOCTYPE html>
+
+<html lang="es">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Terminal Galáctico - Base Alfa</title>
+
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+
+    <style>
+
+        :root {
+
+            --bg-color: #010a15;
+
+            --neon-blue: #00d2ff;
+
+            --neon-green: #00ff66;
+
+            --neon-orange: #ff9f43;
+
+            --panel-bg: rgba(2, 11, 21, 0.9);
+
+        }
+
+        body {
+
+            margin: 0;
+
+            background-color: var(--bg-color);
+
+            color: white;
+
+            font-family: 'Share Tech Mono', monospace;
+
+            overflow: hidden;
+
+        }
+
+        header {
+
+            padding: 15px 20px;
+
+            border-bottom: 1px solid var(--neon-blue);
+
+            display: flex;
+
+            justify-content: space-between;
+
+            align-items: center;
+
+            background: rgba(1, 10, 21, 0.95);
+
+        }
+
+        h1 { margin: 0; font-family: 'Orbitron'; font-size: 20px; letter-spacing: 2px; color: var(--neon-blue); }
+
+        .dashboard {
+
+            display: grid;
+
+            grid-template-columns: 260px 1fr 310px;
+
+            gap: 10px;
+
+            padding: 10px;
+
+            height: calc(100vh - 70px);
+
+            box-sizing: border-box;
+
+        }
+
+        .panel {
+
+            background: var(--panel-bg);
+
+            border: 1px solid rgba(0, 210, 255, 0.2);
+
+            padding: 12px;
+
+            display: flex;
+
+            flex-direction: column;
+
+            gap: 12px;
+
+            box-sizing: border-box;
+
+        }
+
+        .panel-title {
+
+            font-family: 'Orbitron';
+
+            font-size: 11px;
+
+            color: var(--neon-blue);
+
+            border-bottom: 1px solid rgba(0, 210, 255, 0.3);
+
+            padding-bottom: 6px;
+
+            letter-spacing: 1px;
+
+        }
+
+        .sub-panel { display: flex; flex-direction: column; gap: 6px; }
+
+        .log-container {
+
+            flex-grow: 1;
+
+            overflow-y: auto;
+
+            font-size: 11px;
+
+            color: rgba(0, 210, 255, 0.6);
+
+            max-height: 100%;
+
+        }
+
+        .log-entry { margin-bottom: 6px; line-height: 1.3; }
+
+        .log-time { color: var(--neon-blue); margin-right: 5px; }
+
+        .metric { margin-bottom: 8px; }
+
+        .metric-header { display: flex; justify-content: space-between; font-size: 11px; }
+
+        .bar-container { height: 6px; background: #000; border: 1px solid rgba(0, 210, 255, 0.4); margin-top: 4px; }
+
+        .bar-fill { height: 100%; background: var(--neon-blue); transition: width 0.3s ease; }
+
+        .radar-space { position: relative; flex-grow: 1; display: flex; justify-content: center; align-items: center; background: #00040a; border: 1px solid rgba(0, 210, 255, 0.1); }
+
+        #radarCanvas { width: 100%; height: 100%; display: block; }
+
+        .target-viewer { position: relative; height: 175px; background: #010a15; display: flex; justify-content: center; align-items: center; overflow: hidden; border: 1px solid rgba(0, 210, 255, 0.2); }
+
+        .scanner-line { position: absolute; top: 0; left: 0; width: 100%; height: 2px; background: rgba(0, 210, 255, 0.4); animation: scan 2.5s linear infinite; pointer-events: none; }
+
+        .ship-data { font-size: 11px; line-height: 1.5; color: rgba(0, 210, 255, 0.8); }
+
+        .ship-data strong { color: #fff; }
+
+        @keyframes scan { from { top: 0; } to { top: 100%; } }
+
+    </style>
+
+</head>
+
+<body>
+
+
+
+    <header>
+
+        <div class="system-status"><span class="led">🟢</span> SISTEMA ONLINE</div>
+
+        <h1>TERMINAL GALÁCTICO</h1>
+
+        <div class="system-time" id="clock">BASE ALFA | --:--:--</div>
+
+    </header>
+
+
+
+    <div class="dashboard">
+
+        <!-- COLUMNA IZQUIERDA -->
+
+        <aside class="panel left-panel">
+
+            <section class="sub-panel">
+
+                <div class="panel-title">Estado del Sistema</div>
+
+                <div class="metrics-list">
+
+                    <div class="metric">
+
+                        <div class="metric-header"><span>⚡ ENERGÍA</span><span>98%</span></div>
+
+                        <div class="bar-container"><div class="bar-fill" style="width: 98%;"></div></div>
+
+                    </div>
+
+                    <div class="metric">
+
+                        <div class="metric-header"><span>🛡️ ESCUDOS</span><span>92%</span></div>
+
+                        <div class="bar-container"><div class="bar-fill" style="width: 92%;"></div></div>
+
+                    </div>
+
+                </div>
+
+            </section>
+
+           
+
+            <section class="sub-panel" style="flex-grow: 1; min-height: 0;">
+
+                <div class="panel-title">Bitácora</div>
+
+                <div class="log-container" id="log-box"></div>
+
+            </section>
+
+        </aside>
+
+
+
+        <!-- COLUMNA CENTRAL (RADAR) -->
+
+        <main class="panel center-panel">
+
+            <div class="panel-title">Mapa del Sistema</div>
+
+            <div class="radar-space">
+
+                <canvas id="radarCanvas"></canvas>
+
+            </div>
+
+        </main>
+
+
+
+        <!-- COLUMNA DERECHA (PANELES WIREFRAME) -->
+
+        <aside class="panel right-panel">
+
+            <section class="sub-panel">
+
+                <div class="panel-title">Datos de la Nave</div>
+
+                <div class="ship-data" id="ship-info-panel">
+
+                    <p style="color: rgba(0, 210, 255, 0.4); margin: 0;">ESPERANDO FIJACIÓN...</p>
+
+                </div>
+
+            </section>
+
+
+
+            <section class="sub-panel">
+
+                <div class="panel-title">Objetivo Detectado (Blueprint)</div>
+
+                <div class="target-viewer">
+
+                    <canvas id="shipWireframeCanvas" width="285" height="175"></canvas>
+
+                    <div class="scanner-line"></div>
+
+                    <div id="viewer-status" style="position: absolute; bottom: 6px; left: 10px; font-size: 11px; color: #ff9f43; z-index: 10;">STATUS: RASTREANDO...</div>
+
+                </div>
+
+            </section>
+
+
+
+            <section class="sub-panel">
+
+                <div class="panel-title">Análisis de Estructura (Vista 3D)</div>
+
+                <div class="target-viewer">
+
+                    <canvas id="zoomWireframeCanvas" width="285" height="175"></canvas>
+
+                    <div id="zoom-status" style="position: absolute; bottom: 6px; left: 10px; font-size: 11px; color: rgba(0, 210, 255, 0.6); z-index: 10;">RENDER: VECTORIAL_3D</div>
+
+                </div>
+
+            </section>
+
+        </aside>
+
+    </div>
+
+
+
+    <script>
+
+        document.addEventListener('DOMContentLoaded', () => {
+
+            const logBox = document.getElementById('log-box');
+
+            const viewerStatus = document.getElementById('viewer-status');
+
+            const zoomStatus = document.getElementById('zoom-status');
+
+            const shipInfoPanel = document.getElementById('ship-info-panel');
+
+            const clockElement = document.getElementById('clock');
+
+
+
+            function getTimestamp() {
+
+                const now = new Date();
+
+                return `[${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}]`;
+
+            }
+
+
+
+            function addLog(text, isAlert = false) {
+
+                if (!logBox) return;
+
+                const entry = document.createElement('div');
+
+                entry.className = 'log-entry';
+
+                if (isAlert) entry.style.color = 'var(--neon-orange)';
+
+                entry.innerHTML = `<span class="log-time">${getTimestamp()}</span> ${text}`;
+
+                logBox.appendChild(entry);
+
+                logBox.scrollTop = logBox.scrollHeight;
+
+            }
+
+
+
+            setInterval(() => {
+
+                const now = new Date();
+
+                if (clockElement) {
+
+                    clockElement.textContent = `BASE ALFA | ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`;
+
+                }
+
+            }, 1000);
+
+
+
+            addLog("Sistema operativo cargado en núcleo central.");
+
+            addLog("Sondeo de espacio profundo: EN CURSO.");
+
+
+
+            window.addEventListener('radar-avistamiento', () => {
+
+                addLog("¡ANOMALÍA DETECTADA! Sensor de ionización activo.", true);
+
+                if (viewerStatus) { viewerStatus.textContent = "STATUS: ADVERTENCIA"; viewerStatus.style.color = "#ff9f43"; }
+
+            });
+
+
+
+            window.addEventListener('radar-escaneo', () => {
+
+                addLog("Iniciando secuencia de telemetría térmica.");
+
+                if (viewerStatus) viewerStatus.textContent = "STATUS: ESCANEANDO CORE...";
+
+            });
+
+
+
+           window.addEventListener('radar-identificacion', () => {
+    addLog("Nave identificada. Transfiriendo paquete técnico.");
+    if (viewerStatus) { viewerStatus.textContent = "STATUS: OBJETIVO FIJADO"; viewerStatus.style.color = "#00ff66"; }
+    
+    if (shipInfoPanel) {
+        // Mantenemos los datos y añadimos los botones de verificación
+        shipInfoPanel.innerHTML = `
+            <p style="margin:2px 0;"><strong>RECON:</strong> CAZA TIE ADVANCED</p>
+            <p style="margin:2px 0;"><strong>CLASE:</strong> AVANZADO PROTOTIPO</p>
+            <p style="margin:2px 0;"><strong>SISTEMA:</strong> SFS P-S4</p>
+            <p style="margin:2px 0;"><strong>VELOCIDAD:</strong> 1.450 km/s</p>
+            <p style="margin:8px 0 2px 0; border-top: 1px solid var(--neon-blue); padding-top: 5px;"><strong>VERIFICACIÓN:</strong></p>
+            <div style="display: flex; gap: 10px; margin-top: 5px;">
+                <button id="btn-si" style="background: transparent; color: var(--neon-green); border: 1px solid var(--neon-green); padding: 4px 12px; cursor: pointer; font-family: 'Share Tech Mono';">SÍ</button>
+                <button id="btn-no" style="background: transparent; color: #ff9f43; border: 1px solid #ff9f43; padding: 4px 12px; cursor: pointer; font-family: 'Share Tech Mono';">NO</button>
+            </div>
+        `;
+        shipInfoPanel.style.color = "var(--neon-green)";
+
+        // Lógica de los botones
+        document.getElementById('btn-si').onclick = () => {
+    addLog("ACCESO AUTORIZADO. La nave puede proceder.");
+    shipInfoPanel.innerHTML = "<p style='color: var(--neon-green); margin-top: 10px;'>ESTADO: AUTORIZADO</p>";
+    
+    // Reinicio táctico del sistema tras 2 segundos
+    setTimeout(() => {
+        // Restauramos los valores iniciales para empezar de nuevo
+        addLog("Buscando nuevos contactos...");
+        if (viewerStatus) { 
+            viewerStatus.textContent = "STATUS: RASTREANDO..."; 
+            viewerStatus.style.color = "var(--neon-blue)"; 
+        }
+        // Disparamos nuevamente la lógica de detección si tienes una función para ello
+        // O simplemente recargamos el estado inicial de shipInfoPanel
+        shipInfoPanel.innerHTML = `
+            <h3>Datos de la Nave</h3>
+            <p>Esperando nueva señal...</p>
+        `;
+    }, 2000);
+};
+
+        document.getElementById('btn-no').onclick = () => {
+            addLog("ACCESO DENEGADO. Nave marcada como hostil.", true);
+            shipInfoPanel.innerHTML = "<p style='color: #ff9f43; margin-top: 10px;'>ESTADO: DENEGADO (BLOQUEADO)</p>";
+        };
+    }
+});
+
+
+
+            // --- CANVAS 1: SISTEMA RADAR ---
+
+            const radarCanvas = document.getElementById('radarCanvas');
+
+            const rCtx = radarCanvas.getContext('2d');
+
+            const radarContainer = radarCanvas.parentElement;
+
+
+
+            let w = radarCanvas.width = radarContainer.clientWidth;
+
+            let h = radarCanvas.height = radarContainer.clientHeight || 540;
+
+            let cx = w / 2, cy = h / 2;
+
+            let maxRadius = (Math.min(w, h) / 2) - 15;
+
+
+
+            // CORRECCIÓN: Generador de estrellas aumentado de 40 a 120 estrellas
+
+            const stars = [];
+
+            for (let i = 0; i < 120; i++) {
+
+                stars.push({
+
+                    x: Math.random(),
+
+                    y: Math.random(),
+
+                    size: Math.random() * 1.5 + 0.4,
+
+                    alpha: Math.random() * 0.7 + 0.3
+
+                });
+
+            }
+
+
+
+            window.addEventListener('resize', () => {
+
+                w = radarCanvas.width = radarContainer.clientWidth;
+
+                h = radarCanvas.height = radarContainer.clientHeight || 540;
+
+                cx = w / 2; cy = h / 2;
+
+                maxRadius = (Math.min(w, h) / 2) - 15;
+
+            });
+
+
+
+            // CORRECCIÓN: Añadido el cuarto planeta exterior (órbita 0.85)
+
+            const planets = [
+
+                { radius: 4,  orbitPct: 0.18, speed: 0.007, angle: 0, color: '#4ba3e3' },
+
+                { radius: 6,  orbitPct: 0.38, speed: 0.004, angle: 1.2, color: '#00ff66' },
+
+                { radius: 8,  orbitPct: 0.58, speed: 0.0025, angle: 3.4, color: '#fdcb6e' },
+
+                { radius: 5,  orbitPct: 0.85, speed: 0.0012, angle: 5.1, color: '#9b59b6' }
+
+            ];
+
+
+
+            let sweepAngle = 0;
+
+            let scanState = 'SEARCHING';
+
+            let ship = { orbitPct: 0.72, angle: 2.2, speed: 0.002, size: 4, timer: 0 };
+
+
+
+            function traceOctagon(ctx, x, y, size) {
+
+                ctx.beginPath();
+
+                for (let i = 0; i < 8; i++) {
+
+                    let angle = (i * Math.PI / 4) + Math.PI / 8;
+
+                    let ox = x + Math.cos(angle) * size;
+
+                    let oy = y + Math.sin(angle) * size;
+
+                    if (i === 0) ctx.moveTo(ox, oy); else ctx.lineTo(ox, oy);
+
+                }
+
+                ctx.closePath();
+
+            }
+
+
+
+            // --- CANVAS 2 Y 3: ESTRUCTURAS DE LA NAVE ---
+
+            const shipCanvas = document.getElementById('shipWireframeCanvas');
+
+            const sCtx = shipCanvas.getContext('2d');
+
+
+
+            const zoomCanvas = document.getElementById('zoomWireframeCanvas');
+
+            const zCtx = zoomCanvas.getContext('2d');
+
+           
+
+            let blueprintPulse = 0;
+
+            let rotY = 0.5;
+
+            let rotX = 0.22;
+
+
+
+            const vertices3D = {
+
+                pL1: {x: -10, y: -2, z: -1}, pL2: {x: -28, y: -1, z: -0.5},
+
+                pL3: {x: -10, y: 2, z: 1},   pL4: {x: -28, y: 1, z: 0.5},
+
+                pR1: {x: 10, y: -2, z: -1},  pR2: {x: 28, y: -1, z: -0.5},
+
+                pR3: {x: 10, y: 2, z: 1},    pR4: {x: 28, y: 1, z: 0.5}
+
+            };
+
+
+
+            function project3D(pt, rx, ry, scale, cx, cy) {
+
+                let x1 = pt.x * Math.cos(ry) - pt.z * Math.sin(ry);
+
+                let z1 = pt.x * Math.sin(ry) + pt.z * Math.cos(ry);
+
+                let y2 = pt.y * Math.cos(rx) - z1 * Math.sin(rx);
+
+                return { x: cx + x1 * scale, y: cy + y2 * scale };
+
+            }
+
+
+
+            function drawDetailed3DCockpit(ctx, rx, ry, scale3D, cx, cy, colorLines) {
+
+                ctx.lineWidth = 0.8;
+
+                ctx.strokeStyle = colorLines;
+
+                const radius = 14;
+
+               
+
+                for (let m = 0; m < 4; m++) {
+
+                    let angleLong = (m * Math.PI) / 4;
+
+                    ctx.beginPath();
+
+                    for (let i = 0; i <= 24; i++) {
+
+                        let t = (i * Math.PI * 2) / 24;
+
+                        let x = radius * Math.cos(t) * Math.sin(angleLong);
+
+                        let y = radius * Math.sin(t);
+
+                        let z = radius * Math.cos(t) * Math.cos(angleLong);
+
+                        let pt = project3D({x, y, z}, rx, ry, scale3D, cx, cy);
+
+                        if (i === 0) ctx.moveTo(pt.x, pt.y); else ctx.lineTo(pt.x, pt.y);
+
+                    }
+
+                    ctx.stroke();
+
+                }
+
+
+
+                const parallels = [-7, 0, 7];
+
+                parallels.forEach(h => {
+
+                    let rLevel = Math.sqrt(radius * radius - h * h);
+
+                    ctx.beginPath();
+
+                    for (let i = 0; i <= 24; i++) {
+
+                        let t = (i * Math.PI * 2) / 24;
+
+                        let x = rLevel * Math.cos(t);
+
+                        let y = h;
+
+                        let z = rLevel * Math.sin(t);
+
+                        let pt = project3D({x, y, z}, rx, ry, scale3D, cx, cy);
+
+                        if (i === 0) ctx.moveTo(pt.x, pt.y); else ctx.lineTo(pt.x, pt.y);
+
+                    }
+
+                    ctx.stroke();
+
+                });
+
+            }
+
+
+
+            function drawAdvancedInterceptorWing(ctx, rx, ry, scale3D, cx, cy, sideSign, colorLines) {
+
+                const centerCircleRadius = 6;
+
+                const baseWidth = sideSign * 28;  
+
+                const wingEdgeX = sideSign * 42;  
+
+               
+
+                let outerVertices = [
+
+                    { x: baseWidth,  y: -24, z: -20 },
+
+                    { x: wingEdgeX,  y: -42, z: 0 },
+
+                    { x: baseWidth,  y: -24, z: 20 },
+
+                    { x: baseWidth,  y: 24,  z: 20 },
+
+                    { x: wingEdgeX,  y: 42,  z: 0 },
+
+                    { x: baseWidth,  y: 24,  z: -20 }
+
+                ];
+
+
+
+                ctx.lineWidth = 1.3;
+
+                ctx.strokeStyle = colorLines;
+
+                ctx.beginPath();
+
+                outerVertices.forEach((v, i) => {
+
+                    let pt = project3D(v, rx, ry, scale3D, cx, cy);
+
+                    if (i === 0) ctx.moveTo(pt.x, pt.y); else ctx.lineTo(pt.x, pt.y);
+
+                });
+
+                ctx.closePath();
+
+                ctx.stroke();
+
+
+
+                ctx.beginPath();
+
+                for (let i = 0; i <= 16; i++) {
+
+                    let angle = (i * Math.PI * 2) / 16;
+
+                    let pt = project3D({
+
+                        x: baseWidth,
+
+                        y: Math.cos(angle) * centerCircleRadius,
+
+                        z: Math.sin(angle) * centerCircleRadius
+
+                    }, rx, ry, scale3D, cx, cy);
+
+                    if (i === 0) ctx.moveTo(pt.x, pt.y); else ctx.lineTo(pt.x, pt.y);
+
+                }
+
+                ctx.stroke();
+
+
+
+                ctx.lineWidth = 0.5;
+
+                const segments = 6;
+
+
+
+                for (let i = 0; i < 6; i++) {
+
+                    let v1 = outerVertices[i];
+
+                    let v2 = outerVertices[(i + 1) % 6];
+
+
+
+                    for (let j = 0; j <= segments; j++) {
+
+                        let t = j / segments;
+
+                        let borderPt = {
+
+                            x: v1.x + (v2.x - v1.x) * t,
+
+                            y: v1.y + (v2.y - v1.y) * t,
+
+                            z: v1.z + (v2.z - v1.z) * t
+
+                        };
+
+
+
+                        let angleCenter = Math.atan2(borderPt.z, borderPt.y);
+
+                        let centerPt = {
+
+                            x: baseWidth,
+
+                            y: Math.cos(angleCenter) * centerCircleRadius,
+
+                            z: Math.sin(angleCenter) * centerCircleRadius
+
+                        };
+
+
+
+                        let pt3DCenter = project3D(centerPt, rx, ry, scale3D, cx, cy);
+
+                        let pt3DBorder = project3D(borderPt, rx, ry, scale3D, cx, cy);
+
+
+
+                        ctx.beginPath();
+
+                        ctx.moveTo(pt3DCenter.x, pt3DCenter.y);
+
+                        ctx.lineTo(pt3DBorder.x, pt3DBorder.y);
+
+                        ctx.stroke();
+
+                    }
+
+                }
+
+            }
+
+
+
+            function draw2DBlueprintInterceptorWing(ctx, fx, fy, sideSign, colorLines) {
+
+                const baseWidth = fx + (sideSign * 24);
+
+                const wingEdgeX = fx + (sideSign * 38);
+
+                const wingCenterY = fy;
+
+
+
+                const topInner = { x: baseWidth, y: fy - 22 };
+
+                const topOuter = { x: wingEdgeX, y: fy - 38 };
+
+                const bottomOuter = { x: wingEdgeX, y: fy + 38 };
+
+                const bottomInner = { x: baseWidth, y: fy + 22 };
+
+
+
+                ctx.lineWidth = 1.4;
+
+                ctx.strokeStyle = colorLines;
+
+                ctx.beginPath();
+
+                ctx.moveTo(topInner.x, topInner.y);
+
+                ctx.lineTo(topOuter.x, topOuter.y);
+
+                ctx.lineTo(bottomOuter.x, bottomOuter.y);
+
+                ctx.lineTo(bottomInner.x, bottomInner.y);
+
+                ctx.closePath();
+
+                ctx.stroke();
+
+
+
+                ctx.beginPath();
+
+                ctx.arc(baseWidth, wingCenterY, 3, 0, Math.PI * 2);
+
+                ctx.stroke();
+
+
+
+                ctx.lineWidth = 0.5;
+
+               
+
+                const perimeterPoints = [];
+
+                const stepsPerSegment = 5;
+
+
+
+                for(let i=0; i<=stepsPerSegment; i++) {
+
+                    let t = i / stepsPerSegment;
+
+                    perimeterPoints.push({ x: topInner.x + (topOuter.x - topInner.x)*t, y: topInner.y + (topOuter.y - topInner.y)*t });
+
+                }
+
+                for(let i=1; i<=stepsPerSegment; i++) {
+
+                    let t = i / stepsPerSegment;
+
+                    perimeterPoints.push({ x: topOuter.x, y: topOuter.y + (bottomOuter.y - topOuter.y)*t });
+
+                }
+
+                for(let i=1; i<=stepsPerSegment; i++) {
+
+                    let t = i / stepsPerSegment;
+
+                    perimeterPoints.push({ x: bottomOuter.x + (bottomInner.x - bottomOuter.x)*t, y: bottomOuter.y + (bottomInner.y - bottomOuter.y)*t });
+
+                }
+
+
+
+                perimeterPoints.forEach(pt => {
+
+                    ctx.beginPath();
+
+                    ctx.moveTo(baseWidth, wingCenterY);
+
+                    ctx.lineTo(pt.x, pt.y);
+
+                    ctx.stroke();
+
+                });
+
+
+
+                ctx.lineWidth = 1.2;
+
+                ctx.beginPath();
+
+                ctx.moveTo(fx + (sideSign * 15), fy - 2);
+
+                ctx.lineTo(baseWidth, fy - 3);
+
+                ctx.lineTo(baseWidth, fy + 3);
+
+                ctx.lineTo(fx + (sideSign * 15), fy + 2);
+
+                ctx.stroke();
+
+            }
+
+
+
+            function drawShipBlueprint(state) {
+
+                sCtx.clearRect(0, 0, shipCanvas.width, shipCanvas.height);
+
+                zCtx.clearRect(0, 0, zoomCanvas.width, zoomCanvas.height);
+
+                blueprintPulse += 0.02;
+
+
+
+                let colorBase = 'rgba(0, 210, 255, 0.2)';
+
+                let colorLines = 'rgba(0, 210, 255, 0.5)';
+
+                let colorText = 'rgba(0, 210, 255, 0.6)';
+
+
+
+                if (state === 'LOCKING' || state === 'SCANNING') {
+
+                    colorBase = 'rgba(255, 159, 67, 0.3)'; colorLines = 'rgba(255, 159, 67, 0.8)'; colorText = 'rgba(255, 159, 67, 0.8)';
+
+                    if(zoomStatus) zoomStatus.style.color = "#ff9f43";
+
+                } else if (state === 'IDENTIFIED') {
+
+                    colorBase = 'rgba(0, 255, 102, 0.25)'; colorLines = 'rgba(0, 255, 102, 0.85)'; colorText = 'rgba(0, 255, 102, 0.9)';
+
+                    if(zoomStatus) zoomStatus.style.color = "#00ff66";
+
+                }
+
+
+
+                sCtx.strokeStyle = 'rgba(0, 210, 255, 0.04)'; sCtx.lineWidth = 1;
+
+                for(let x=0; x<shipCanvas.width; x+=15) { sCtx.beginPath(); sCtx.moveTo(x,0); sCtx.lineTo(x,shipCanvas.height); sCtx.stroke(); }
+
+                for(let y=0; y<shipCanvas.height; y+=15) { sCtx.beginPath(); sCtx.moveTo(0,y); sCtx.lineTo(shipCanvas.width,y); sCtx.stroke(); }
+
+               
+
+                let fx = 95, fy = 85;
+
+                draw2DBlueprintInterceptorWing(sCtx, fx, fy, -1, colorLines);
+
+                draw2DBlueprintInterceptorWing(sCtx, fx, fy, 1, colorLines);
+
+
+
+                sCtx.lineWidth = 1.3;
+
+                sCtx.strokeStyle = colorLines;
+
+                sCtx.beginPath(); sCtx.arc(fx, fy, 15, 0, Math.PI*2); sCtx.fillStyle = '#010a15'; sCtx.fill(); sCtx.stroke();
+
+                sCtx.beginPath(); sCtx.arc(fx, fy, 6, 0, Math.PI*2); sCtx.stroke();
+
+                for(let a=0; a<Math.PI*2; a+=Math.PI/4) {
+
+                    sCtx.beginPath();
+
+                    sCtx.moveTo(fx + Math.cos(a)*4, fy + Math.sin(a)*4);
+
+                    sCtx.lineTo(fx + Math.cos(a)*15, fy + Math.sin(a)*15);
+
+                    sCtx.stroke();
+
+                }
+
+               
+
+                sCtx.fillStyle = colorText; sCtx.font = '9px Share Tech Mono';
+
+                sCtx.fillText("PANEL RADIAL ALTA-D", fx - 90, fy - 48); sCtx.fillText("SYS: INTERCEPTOR S-4", 172, 110);
+
+                sCtx.strokeStyle = colorBase; sCtx.strokeRect(172, 125, 100, 25);
+
+                let barW = Math.abs(Math.sin(blueprintPulse)) * 90; sCtx.fillStyle = colorLines; sCtx.fillRect(177, 135, barW, 5);
+
+
+
+                zCtx.strokeStyle = 'rgba(0, 210, 255, 0.03)';
+
+                for(let x=0; x<zoomCanvas.width; x+=20) { zCtx.beginPath(); zCtx.moveTo(x,0); zCtx.lineTo(x,zoomCanvas.height); zCtx.stroke(); }
+
+                for(let y=0; y<zoomCanvas.height; y+=20) { zCtx.beginPath(); zCtx.moveTo(0,y); zCtx.lineTo(zoomCanvas.width,y); zCtx.stroke(); }
+
+
+
+                rotY += 0.006;
+
+                rotX = 0.18 + Math.sin(blueprintPulse * 0.3) * 0.03;
+
+
+
+                let zcx = zoomCanvas.width / 2;
+
+                let zcy = zoomCanvas.height / 2;
+
+                let scale3D = 1.45;
+
+
+
+                let p = {};
+
+                for (let key in vertices3D) p[key] = project3D(vertices3D[key], rotX, rotY, scale3D, zcx, zcy);
+
+               
+
+                zCtx.lineWidth = 1.0;
+
+                zCtx.strokeStyle = colorLines;
+
+                zCtx.beginPath();
+
+                zCtx.moveTo(p.pL1.x, p.pL1.y); zCtx.lineTo(p.pL2.x, p.pL2.y);
+
+                zCtx.moveTo(p.pL3.x, p.pL3.y); zCtx.lineTo(p.pL4.x, p.pL4.y);
+
+                zCtx.moveTo(p.pR1.x, p.pR1.y); zCtx.lineTo(p.pR2.x, p.pR2.y);
+
+                zCtx.moveTo(p.pR3.x, p.pR3.y); zCtx.lineTo(p.pR4.x, p.pR4.y);
+
+                zCtx.stroke();
+
+
+
+                drawDetailed3DCockpit(zCtx, rotX, rotY, scale3D, zcx, zcy, colorLines);
+
+                drawAdvancedInterceptorWing(zCtx, rotX, rotY, scale3D, zcx, zcy, -1, colorLines);
+
+                drawAdvancedInterceptorWing(zCtx, rotX, rotY, scale3D, zcx, zcy, 1, colorLines);  
+
+
+
+                zCtx.strokeStyle = colorBase; zCtx.lineWidth = 1; let len = 10, pad = 8;
+
+                zCtx.beginPath();
+
+                zCtx.moveTo(pad, pad + len); zCtx.lineTo(pad, pad); zCtx.lineTo(pad + len, pad);
+
+                zCtx.moveTo(zoomCanvas.width - pad, pad + len); zCtx.lineTo(zoomCanvas.width - pad, pad); zCtx.lineTo(zoomCanvas.width - pad - len, pad);
+
+                zCtx.stroke();
+
+
+
+                if (zoomStatus) {
+
+                    let dynamicYaw = Math.round((rotY % (Math.PI * 2)) * (180 / Math.PI));
+
+                    zoomStatus.textContent = `VISTA_3D // GRID: VECTOR_INTELLIGENCE // YAW: ${dynamicYaw}°`;
+
+                }
+
+            }
+
+
+
+            function drawRadar() {
+
+                rCtx.fillStyle = '#020b14'; rCtx.fillRect(0, 0, w, h);
+
+
+
+                rCtx.save();
+
+                traceOctagon(rCtx, cx, cy, maxRadius);
+
+                rCtx.clip();
+
+               
+
+                rCtx.fillStyle = '#00040a'; rCtx.fillRect(0, 0, w, h);
+
+
+
+                // Dibujado de las 120 estrellas estables de fondo
+
+                stars.forEach(s => {
+
+                    rCtx.fillStyle = `rgba(255, 255, 255, ${s.alpha})`;
+
+                    rCtx.fillRect(s.x * w, s.y * h, s.size, s.size);
+
+                });
+
+
+
+                // Órbitas de los planetas
+
+                planets.forEach(p => {
+
+                    rCtx.beginPath(); rCtx.arc(cx, cy, maxRadius * p.orbitPct, 0, Math.PI * 2);
+
+                    rCtx.strokeStyle = 'rgba(0, 210, 255, 0.15)'; rCtx.stroke();
+
+                });
+
+
+
+                // Renderizado completo de los 4 planetas
+
+                planets.forEach((p) => {
+
+                    p.angle += p.speed;
+
+                    let px = cx + Math.cos(p.angle) * (maxRadius * p.orbitPct);
+
+                    let py = cy + Math.sin(p.angle) * (maxRadius * p.orbitPct);
+
+                    rCtx.beginPath(); rCtx.arc(px, py, p.radius, 0, Math.PI * 2);
+
+                    rCtx.fillStyle = p.color; rCtx.fill();
+
+                });
+
+
+
+                rCtx.beginPath(); rCtx.arc(cx, cy, 6, 0, Math.PI * 2); rCtx.fillStyle = '#ffdf6d'; rCtx.fill();
+
+
+
+                let targetOrbit = maxRadius * ship.orbitPct;
+
+                let tx = cx + Math.cos(ship.angle) * targetOrbit;
+
+                let ty = cy + Math.sin(ship.angle) * targetOrbit;
+
+
+
+                if (scanState === 'SEARCHING') {
+
+                    sweepAngle += 0.02;
+
+                    rCtx.strokeStyle = 'rgba(0, 210, 255, 0.2)'; rCtx.setLineDash([5, 5]);
+
+                    rCtx.beginPath();
+
+                    let dx = Math.cos(sweepAngle) * w; let dy = Math.sin(sweepAngle) * h;
+
+                    rCtx.moveTo(cx - dx, cy - dy); rCtx.lineTo(cx + dx, cy + dy); rCtx.stroke();
+
+                    rCtx.setLineDash([]);
+
+
+
+                    ship.timer++;
+
+                    if (ship.timer > 120) { scanState = 'LOCKING'; window.dispatchEvent(new CustomEvent('radar-avistamiento')); }
+
+                } else if (scanState === 'LOCKING') {
+
+                    rCtx.strokeStyle = '#ff9f43';
+
+                    rCtx.beginPath(); rCtx.moveTo(0, ty); rCtx.lineTo(w, ty); rCtx.moveTo(tx, 0); rCtx.lineTo(tx, h); rCtx.stroke();
+
+                    ship.timer++;
+
+                    if (ship.timer > 240) { scanState = 'SCANNING'; window.dispatchEvent(new CustomEvent('radar-escaneo')); }
+
+                } else if (scanState === 'SCANNING') {
+
+                    rCtx.strokeStyle = '#ff9f43'; rCtx.strokeRect(tx - 10, ty - 10, 20, 20);
+
+                    ship.timer++;
+
+                    if (ship.timer > 360) { scanState = 'IDENTIFIED'; ship.size = 6; window.dispatchEvent(new CustomEvent('radar-identificacion')); }
+
+                } else if (scanState === 'IDENTIFIED') {
+
+                    rCtx.strokeStyle = '#00ff66'; rCtx.strokeRect(tx - 12, ty - 12, 24, 24);
+
+                    rCtx.fillStyle = '#00ff66'; rCtx.font = '11px Share Tech Mono'; rCtx.fillText("TARGET ACQUIRED", tx + 16, ty + 4);
+
+                }
+
+
+
+                if (ship.timer > 40) {
+
+                    ship.angle += ship.speed;
+
+                    rCtx.save(); rCtx.translate(tx, ty);
+
+                    rCtx.fillStyle = scanState === 'IDENTIFIED' ? '#00ff66' : '#ff9f43';
+
+                    rCtx.beginPath(); rCtx.moveTo(0, -ship.size); rCtx.lineTo(ship.size, 0); rCtx.lineTo(0, ship.size); rCtx.lineTo(-ship.size, 0); rCtx.closePath(); rCtx.fill();
+
+                    rCtx.restore();
+
+                }
+
+
+
+                rCtx.restore();
+
+
+
+                traceOctagon(rCtx, cx, cy, maxRadius + 2);
+
+                rCtx.strokeStyle = '#00d2ff'; rCtx.lineWidth = 2; rCtx.stroke();
+
+
+
+                drawShipBlueprint(scanState);
+
+            }
+
+
+
+            function tick() {
+
+                drawRadar();
+
+                requestAnimationFrame(tick);
+
+            }
+
+            tick();
+
+        });
+
+    </script>
+
+</body>
+
+</html> 
+
